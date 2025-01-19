@@ -1,19 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
+using Tasks.API.Data;
 using Tasks.API.Interfaces;
 using Tasks.API.Responses;
 
 namespace Tasks.API.Services;
 
-public class TaskService : ITaskService
+public class TaskService(TasksDbContext tasksDbContext) : ITaskService
 {
-    private readonly TasksDbContext _tasksDbContext;
-
-    public TaskService(TasksDbContext tasksDbContext) => _tasksDbContext = tasksDbContext;
-
     public async Task<DeleteTaskResponse> DeleteTask(int taskId, int userId)
     {
-        var task = await _tasksDbContext.Tasks.FindAsync(taskId);
+        var task = await tasksDbContext.Tasks.FindAsync(taskId);
 
         if (task is null)
         {
@@ -35,9 +31,9 @@ public class TaskService : ITaskService
             };
         }
 
-        _tasksDbContext.Tasks.Remove(task);
+        tasksDbContext.Tasks.Remove(task);
 
-        var saveResponse = await _tasksDbContext.SaveChangesAsync();
+        var saveResponse = await tasksDbContext.SaveChangesAsync();
 
         if (saveResponse >= 0)
         {
@@ -58,23 +54,23 @@ public class TaskService : ITaskService
 
     public async Task<GetTasksResponse> GetTasks(int userId)
     {
-        var tasks = await _tasksDbContext.Tasks.Where(o => o.UserId == userId).ToListAsync();
+        var tasks = await tasksDbContext.Tasks.Where(o => o.UserId == userId).ToListAsync();
         return new GetTasksResponse { Success = true, Tasks = tasks };
     }
 
     public async Task<SaveTaskResponse> SaveTask(Entities.Task task)
     {
         if (task.Id == 0)
-            await _tasksDbContext.Tasks.AddAsync(task);
+            await tasksDbContext.Tasks.AddAsync(task);
         else
         {
-            var taskRecord = await _tasksDbContext.Tasks.FindAsync(task.Id);
+            var taskRecord = await tasksDbContext.Tasks.FindAsync(task.Id);
 
             taskRecord!.IsCompleted = task.IsCompleted;
             taskRecord.Ts = task.Ts;
         }
 
-        var saveResponse = await _tasksDbContext.SaveChangesAsync();
+        var saveResponse = await tasksDbContext.SaveChangesAsync();
 
         if (saveResponse >= 0)
         {

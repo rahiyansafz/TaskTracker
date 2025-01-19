@@ -10,22 +10,13 @@ using Tasks.API.Responses;
 namespace Tasks.API.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class UsersController : BaseController
+public class UsersController(IUserService userService, ITokenService tokenService) : BaseController
 {
-    private readonly IUserService _userService;
-    private readonly ITokenService _tokenService;
-
-    public UsersController(IUserService userService, ITokenService tokenService)
-    {
-        _userService = userService;
-        _tokenService = tokenService;
-    }
-
     [HttpPost]
     [Route("login")]
     public async Task<IActionResult> Login(LoginRequest loginRequest)
     {
-        if (loginRequest is null || string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
+        if (string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
         {
             return BadRequest(new TokenResponse
             {
@@ -34,7 +25,7 @@ public class UsersController : BaseController
             });
         }
 
-        var loginResponse = await _userService.LoginAsync(loginRequest);
+        var loginResponse = await userService.LoginAsync(loginRequest);
 
         if (!loginResponse.Success)
         {
@@ -52,7 +43,7 @@ public class UsersController : BaseController
     [Route("refresh_token")]
     public async Task<IActionResult> RefreshToken(RefreshTokenRequest refreshTokenRequest)
     {
-        if (refreshTokenRequest is null || string.IsNullOrEmpty(refreshTokenRequest.RefreshToken) || refreshTokenRequest.UserId == 0)
+        if (string.IsNullOrEmpty(refreshTokenRequest.RefreshToken) || refreshTokenRequest.UserId == 0)
         {
             return BadRequest(new TokenResponse
             {
@@ -61,12 +52,12 @@ public class UsersController : BaseController
             });
         }
 
-        var validateRefreshTokenResponse = await _tokenService.ValidateRefreshTokenAsync(refreshTokenRequest);
+        var validateRefreshTokenResponse = await tokenService.ValidateRefreshTokenAsync(refreshTokenRequest);
 
         if (!validateRefreshTokenResponse.Success)
             return BadRequest(validateRefreshTokenResponse);
 
-        var tokenResponse = await _tokenService.GenerateTokensAsync(validateRefreshTokenResponse.UserId);
+        var tokenResponse = await tokenService.GenerateTokensAsync(validateRefreshTokenResponse.UserId);
 
         return Ok(new TokenResponse { AccessToken = tokenResponse.Item1, RefreshToken = tokenResponse.Item2 });
     }
@@ -78,7 +69,7 @@ public class UsersController : BaseController
         if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(x => x.Errors.Select(c => c.ErrorMessage)).ToList();
-            if (errors.Any())
+            if (errors.Count != 0)
             {
                 return BadRequest(new TokenResponse
                 {
@@ -88,7 +79,7 @@ public class UsersController : BaseController
             }
         }
 
-        var signupResponse = await _userService.SignupAsync(signupRequest);
+        var signupResponse = await userService.SignupAsync(signupRequest);
 
         if (!signupResponse.Success)
             return UnprocessableEntity(signupResponse);
@@ -101,7 +92,7 @@ public class UsersController : BaseController
     [Route("logout")]
     public async Task<IActionResult> Logout()
     {
-        var logout = await _userService.LogoutAsync(UserID);
+        var logout = await userService.LogoutAsync(UserID);
 
         if (!logout.Success)
             return UnprocessableEntity(logout);
@@ -114,7 +105,7 @@ public class UsersController : BaseController
     [Route("info")]
     public async Task<IActionResult> Info()
     {
-        var userResponse = await _userService.GetInfoAsync(UserID);
+        var userResponse = await userService.GetInfoAsync(UserID);
 
         if (!userResponse.Success)
             return UnprocessableEntity(userResponse);
