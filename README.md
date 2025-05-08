@@ -1,6 +1,6 @@
 # TaskTracker
 
-TaskTracker is a full-stack application built with Angular 15 and .NET 7. It provides a rich set of features including JWT Authentication, Refresh Tokens, and Task Management.
+TaskTracker is a full-stack application built with Angular 15 and .NET 9. It provides a rich set of features including JWT Authentication, Refresh Tokens, and Task Management.
 
 ## Features
 

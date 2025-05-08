@@ -9,16 +9,12 @@ namespace Tasks.API.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class TasksController : BaseController
+public class TasksController(ITaskService taskService) : BaseController
 {
-    private readonly ITaskService _taskService;
-
-    public TasksController(ITaskService taskService) => _taskService = taskService;
-
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var getTasksResponse = await _taskService.GetTasks(UserID);
+        var getTasksResponse = await taskService.GetTasks(UserID);
 
         if (!getTasksResponse.Success)
             return UnprocessableEntity(getTasksResponse);
@@ -33,7 +29,7 @@ public class TasksController : BaseController
     {
         var task = new Entities.Task { IsCompleted = taskRequest.IsCompleted, Ts = taskRequest.Ts, Name = taskRequest.Name, UserId = UserID };
 
-        var saveTaskResponse = await _taskService.SaveTask(task);
+        var saveTaskResponse = await taskService.SaveTask(task);
 
         if (!saveTaskResponse.Success)
             return UnprocessableEntity(saveTaskResponse);
@@ -49,7 +45,7 @@ public class TasksController : BaseController
         if (id == 0)
             return BadRequest(new DeleteTaskResponse { Success = false, ErrorCode = "D01", Error = "Invalid Task id" });
 
-        var deleteTaskResponse = await _taskService.DeleteTask(id, UserID);
+        var deleteTaskResponse = await taskService.DeleteTask(id, UserID);
 
         if (!deleteTaskResponse.Success)
             return UnprocessableEntity(deleteTaskResponse);
@@ -62,7 +58,7 @@ public class TasksController : BaseController
     {
         var task = new Entities.Task { Id = taskRequest.Id, IsCompleted = taskRequest.IsCompleted, Ts = taskRequest.Ts, Name = taskRequest.Name, UserId = UserID };
 
-        var saveTaskResponse = await _taskService.SaveTask(task);
+        var saveTaskResponse = await taskService.SaveTask(task);
 
         if (!saveTaskResponse.Success)
             return UnprocessableEntity(saveTaskResponse);

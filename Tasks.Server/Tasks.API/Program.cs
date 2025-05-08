@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 using Tasks.API;
+using Tasks.API.Data;
 using Tasks.API.Helpers;
 using Tasks.API.Interfaces;
 using Tasks.API.Services;
@@ -14,11 +15,13 @@ const string AllowAllHeadersPolicy = "AllowAllHeadersPolicy";
 
 builder.Services.AddCors(options =>
 {
+    var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>();
+
     options.AddPolicy(AllowAllHeadersPolicy,
         builder =>
         {
-            builder.WithOrigins("http://localhost:4200")
-                    .AllowAnyMethod()
+            builder.WithOrigins(corsOrigins)
+                   .AllowAnyMethod()
                    .AllowAnyHeader();
         });
 });

@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
 using Tasks.API.Entities;
 
-namespace Tasks.API;
+namespace Tasks.API.Data;
 
 public partial class TasksDbContext : DbContext
 {

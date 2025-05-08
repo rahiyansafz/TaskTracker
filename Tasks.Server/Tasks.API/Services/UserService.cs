@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
+using Tasks.API.Data;
 using Tasks.API.Entities;
 using Tasks.API.Helpers;
 using Tasks.API.Interfaces;
@@ -8,20 +8,11 @@ using Tasks.API.Responses;
 
 namespace Tasks.API.Services;
 
-public class UserService : IUserService
+public class UserService(TasksDbContext tasksDbContext, ITokenService tokenService) : IUserService
 {
-    private readonly TasksDbContext _tasksDbContext;
-    private readonly ITokenService _tokenService;
-
-    public UserService(TasksDbContext tasksDbContext, ITokenService tokenService)
-    {
-        _tasksDbContext = tasksDbContext;
-        _tokenService = tokenService;
-    }
-
     public async Task<UserResponse> GetInfoAsync(int userId)
     {
-        var user = await _tasksDbContext.Users.FindAsync(userId);
+        var user = await tasksDbContext.Users.FindAsync(userId);
 
         if (user is null)
         {
@@ -45,7 +36,7 @@ public class UserService : IUserService
 
     public async Task<TokenResponse> LoginAsync(LoginRequest loginRequest)
     {
-        var user = _tasksDbContext.Users.SingleOrDefault(user => user.Active && user.Email == loginRequest.Email);
+        var user = tasksDbContext.Users.SingleOrDefault(user => user.Active && user.Email == loginRequest.Email);
 
         if (user is null)
         {
@@ -56,6 +47,7 @@ public class UserService : IUserService
                 ErrorCode = "L02"
             };
         }
+        
         var passwordHash = PasswordHelper.HashUsingPbkdf2(loginRequest.Password, Convert.FromBase64String(user.PasswordSalt));
 
         if (user.Password != passwordHash)
@@ -68,7 +60,7 @@ public class UserService : IUserService
             };
         }
 
-        var token = await System.Threading.Tasks.Task.Run(() => _tokenService.GenerateTokensAsync(user.Id));
+        var token = await System.Threading.Tasks.Task.Run(() => tokenService.GenerateTokensAsync(user.Id));
 
         return new TokenResponse
         {
@@ -82,24 +74,25 @@ public class UserService : IUserService
 
     public async Task<LogoutResponse> LogoutAsync(int userId)
     {
-        var refreshToken = await _tasksDbContext.RefreshTokens.FirstOrDefaultAsync(o => o.UserId == userId);
+        var refreshToken = await tasksDbContext.RefreshTokens.FirstOrDefaultAsync(o => o.UserId == userId);
 
         if (refreshToken is null)
             return new LogoutResponse { Success = true };
 
-        _tasksDbContext.RefreshTokens.Remove(refreshToken);
+        tasksDbContext.RefreshTokens.Remove(refreshToken);
 
-        var saveResponse = await _tasksDbContext.SaveChangesAsync();
+        var saveResponse = await tasksDbContext.SaveChangesAsync();
 
-        if (saveResponse >= 0)
-            return new LogoutResponse { Success = true };
-
-        return new LogoutResponse { Success = false, Error = "Unable to logout user", ErrorCode = "L04" };
+        return saveResponse switch
+        {
+            >= 0 => new LogoutResponse { Success = true },
+            _ => new LogoutResponse { Success = false, Error = "Unable to logout user", ErrorCode = "L04" }
+        };
     }
 
     public async Task<SignupResponse> SignupAsync(SignupRequest signupRequest)
     {
-        var existingUser = await _tasksDbContext.Users.SingleOrDefaultAsync(user => user.Email == signupRequest.Email);
+        var existingUser = await tasksDbContext.Users.SingleOrDefaultAsync(user => user.Email == signupRequest.Email);
 
         if (existingUser is not null)
         {
@@ -145,9 +138,9 @@ public class UserService : IUserService
             Active = true // You can save is false and send confirmation email to the user, then once the user confirms the email you can make it true
         };
 
-        await _tasksDbContext.Users.AddAsync(user);
+        await tasksDbContext.Users.AddAsync(user);
 
-        var saveResponse = await _tasksDbContext.SaveChangesAsync();
+        var saveResponse = await tasksDbContext.SaveChangesAsync();
 
         if (saveResponse >= 0)
             return new SignupResponse { Success = true, Email = user.Email };

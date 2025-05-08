@@ -17,9 +17,9 @@ public class TokenHelper
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Convert.FromBase64String(Secret);
 
-        var claimsIdentity = new ClaimsIdentity(new[] {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
-            });
+        var claimsIdentity = new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+        ]);
 
         var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature);
 
